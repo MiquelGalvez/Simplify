@@ -1,0 +1,101 @@
+﻿<UserControl x:Class="S50MVVM.View.Settings"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:S50MVVM.View"
+             xmlns:vm="clr-namespace:S50MVVM.ViewModel"
+             mc:Ignorable="d"
+             d:DesignHeight="700" 
+             d:DesignWidth="790"
+             Style="{StaticResource Page_Style}">
+
+    <!-- Establecer el DataContext en el ViewModel SettingVM -->
+    <UserControl.DataContext>
+        <vm:SettingVM/>
+    </UserControl.DataContext>
+
+    <DockPanel>
+        <Grid DockPanel.Dock="Top">
+            <Image Height="225" Source="../Images/music.jpg" Opacity=".3" Stretch="UniformToFill"/>
+            <StackPanel VerticalAlignment="Bottom" Margin="8">
+                <TextBlock Text="PLAYLIST" Foreground="White" FontSize="14" FontWeight="Medium"/>
+                <!-- Vincular directamente al nombre de la lista en SettingVM -->
+                <TextBlock Name="NomPlaylist" Text="{Binding NombrePlaylist}" Foreground="White" FontSize="44" FontWeight="Bold"/>
+                <TextBlock Text="Mix made for you" Foreground="LightGray" FontSize="12" FontWeight="Bold"/>
+            </StackPanel>
+        </Grid>
+        <StackPanel ScrollViewer.CanContentScroll="False">
+            <ListBox ScrollViewer.VerticalScrollBarVisibility="Hidden" BorderBrush="Transparent" Height="400" Background="Transparent" ItemsSource="{Binding Canciones}" x:Name="Llistacanciones" d:ItemsSource="{d:SampleData ItemCount=5}" Width="790">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Para la imagen -->
+                                <ColumnDefinition Width="*"/>
+                                <!-- Para el texto -->
+                            </Grid.ColumnDefinitions>
+                            <Image Source="{Binding URLImagenAlbum}" Style="{StaticResource Image_Style}"/>
+                            <StackPanel Grid.Column="1" Margin="40,0,5,0">
+                                <TextBlock Text="{Binding Titulo}" Foreground="White" FontSize="20"/>
+                                <TextBlock Text="{Binding Artista}" Foreground="LightGray" FontSize="15"/>
+                                <TextBlock Text="{Binding Album}" Foreground="LightGray" FontSize="15"/>
+                                <TextBlock Text="{Binding Duracio}" Foreground="LightGray" FontSize="15"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <StackPanel Width="800" DockPanel.Dock="Bottom" Orientation="Vertical" HorizontalAlignment="Center" Margin="10" Height="74">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button Content="Play/Pause" Command="{Binding IniciarReproduccionCommand}" Margin="5">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="FontFamily" Value="Segoe UI" />
+                                <Setter Property="FontSize" Value="16" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Padding" Value="10,5" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="#1DB954" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="Stop" Command="{Binding StopCommand}" Margin="5">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <ContentPresenter />
+                            </ControlTemplate>
+                        </Button.Template>
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="FontFamily" Value="Segoe UI" />
+                                <Setter Property="FontSize" Value="16" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Padding" Value="10,5" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="#1DB954" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <Slider Name="Barrarepro" Value="{Binding DuracionSeleccionada}" Maximum="10" Background="#535353" Height="7" Margin="150,5"/>
+            </StackPanel>
+        </StackPanel>
+    </DockPanel>
+</UserControl>
