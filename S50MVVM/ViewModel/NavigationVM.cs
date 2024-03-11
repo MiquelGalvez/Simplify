@@ -46,12 +46,13 @@ namespace S50MVVM.ViewModel
         public ICommand ShipmentsCommand { get; set; }
         public ICommand SettingsCommand { get; set; }
 
+        // Mètode per a navegar a la pàgina d'inici
         private void Home(object obj) => CurrentView = new HomeVM();
+
+        // Mètode per a navegar a la pàgina de clients
         private void Customer(object obj) => CurrentView = new CustomerVM();
-        private void Product(object obj) => CurrentView = new ProductVM();
-        private void Order(object obj) => CurrentView = new OrderVM();
-        private void Transaction(object obj) => CurrentView = new TransactionVM();
-        private void Shipment(object obj) => CurrentView = new ShipmentVM();
+
+        // Mètode per a navegar a la pàgina de configuració
         private void Setting(object obj) => CurrentView = new SettingVM();
 
         public NavigationVM()
@@ -59,50 +60,29 @@ namespace S50MVVM.ViewModel
             ListBoxDoubleClickCommand = new RelayCommand(ListBoxDoubleClick);
             HomeCommand = new RelayCommand(Home);
             CustomersCommand = new RelayCommand(Customer);
-            ProductsCommand = new RelayCommand(Product);
-            OrdersCommand = new RelayCommand(Order);
-            TransactionsCommand = new RelayCommand(Transaction);
-            ShipmentsCommand = new RelayCommand(Shipment);
             SettingsCommand = new RelayCommand(Setting);
 
-            // Startup Page
+            // Pàgina d'inici
             CurrentView = new HomeVM();
-            CargarListasReproduccionDesdeBaseDeDatos();
+            CargarListasReproduccionDesdeBaseDeDatos(Thread.CurrentPrincipal.Identity.Name);
         }
 
-        // Método para cargar las listas en el ListBox
-        private void CargarListasReproduccionDesdeBaseDeDatos()
+        // Mètode per a carregar les llistes en el ListBox
+        private void CargarListasReproduccionDesdeBaseDeDatos(string nombreUsuario)
         {
-            ListasReproduccion = new ObservableCollection<ListaReproduccion>();
-
-            string connectionString = ConfigurationManager.ConnectionStrings["S50MVVM.Properties.Settings.CampalansSpotiConnectionString"].ConnectionString;
-
-            string query = "SELECT * FROM ListasReproduccion";
-
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                SqlCommand command = new SqlCommand(query, connection);
-                connection.Open();
-                SqlDataReader reader = command.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    ListasReproduccion.Add(new ListaReproduccion
-                    {
-                        Id = Convert.ToInt32(reader["PlaylistID"]),
-                        NombreLista = reader["NombreLista"].ToString(),
-                        URLImagenLista = reader["URLImagenLista"].ToString(),
-                    });
-                }
-                reader.Close();
-            }
+            // Truca al mètode de BBDD per a carregar les llistes de reproducció
+            ListasReproduccion = BBDD.CargarListasReproduccionDesdeBaseDeDatos(nombreUsuario);
         }
 
+        // Mètode per a gestionar el doble clic en el ListBox
         private void ListBoxDoubleClick(object selectedItem)
         {
             if (selectedItem is ListaReproduccion playlist)
             {
+                // Estableix el nom de la llista com a identitat de l'usuari actual
                 Thread.CurrentPrincipal = new GenericPrincipal(new CustomerProjectIdentity(Thread.CurrentPrincipal.Identity.Name, playlist.NombreLista), null);
+
+                // Navega a la pàgina de configuració amb el context de la llista seleccionada
                 CurrentView = new Settings { DataContext = new SettingVM { NombrePlaylist = playlist.NombreLista } };
             }
         }

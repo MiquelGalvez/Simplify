@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace S50MVVM.Model
 {
-    internal class ListaReproduccion
+    public class ListaReproduccion
     {
         public int Id { get; set; }
         public string NombreLista { get; set; }

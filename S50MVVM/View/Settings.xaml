@@ -15,6 +15,15 @@
         <vm:SettingVM/>
     </UserControl.DataContext>
 
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Styles/Buscador.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+
     <DockPanel>
         <Grid DockPanel.Dock="Top">
             <Image Height="225" Source="../Images/music.jpg" Opacity=".3" Stretch="UniformToFill"/>
@@ -26,7 +35,7 @@
             </StackPanel>
         </Grid>
         <StackPanel ScrollViewer.CanContentScroll="False">
-            <ListBox ScrollViewer.VerticalScrollBarVisibility="Hidden" BorderBrush="Transparent" Height="400" Background="Transparent" ItemsSource="{Binding Canciones}" x:Name="Llistacanciones" d:ItemsSource="{d:SampleData ItemCount=5}" Width="790">
+            <ListBox ItemsSource="{Binding Canciones}" SelectedItem="{Binding SelectedSong}" MouseDoubleClick="ListBox_MouseDoubleClick" Style="{StaticResource SpotifyListBoxStyle}" ScrollViewer.VerticalScrollBarVisibility="Hidden" BorderBrush="Transparent" Height="368" Background="Transparent" x:Name="Llistacanciones" d:ItemsSource="{d:SampleData ItemCount=5}" Width="790">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <Grid>
@@ -47,55 +56,19 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <StackPanel Width="800" DockPanel.Dock="Bottom" Orientation="Vertical" HorizontalAlignment="Center" Margin="10" Height="74">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button Content="Play/Pause" Command="{Binding IniciarReproduccionCommand}" Margin="5">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <ContentPresenter />
-                            </ControlTemplate>
-                        </Button.Template>
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="Foreground" Value="White" />
-                                <Setter Property="FontFamily" Value="Segoe UI" />
-                                <Setter Property="FontSize" Value="16" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Padding" Value="10,5" />
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Foreground" Value="#1DB954" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-                    <Button Content="Stop" Command="{Binding StopCommand}" Margin="5">
-                        <Button.Template>
-                            <ControlTemplate TargetType="Button">
-                                <ContentPresenter />
-                            </ControlTemplate>
-                        </Button.Template>
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="Foreground" Value="White" />
-                                <Setter Property="FontFamily" Value="Segoe UI" />
-                                <Setter Property="FontSize" Value="16" />
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="Padding" Value="10,5" />
-                                <Style.Triggers>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Foreground" Value="#1DB954" />
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+            <StackPanel Margin="0,5,0,0"  Orientation="Vertical" Height="81">
+                <StackPanel Margin="0,5,0,0" Orientation="Horizontal" Width="678" Height="46">
+                    <Button Content="Play/Pause" Command="{Binding ListBoxDoubleClickCommand}" CommandParameter="{Binding SelectedSong}" Width="83" Margin="10,10,0,0" VerticalAlignment="Center" Style="{StaticResource SpotifyButton2Style}"/>
+                    <Button Content="Stop" Width="51" Margin="0,10,0,0" VerticalAlignment="Center" Style="{StaticResource SpotifyButton2Style}"/>
+                    <Slider Value="{Binding Volume, Mode=TwoWay}" Minimum="0" Maximum="1" Width="101" VerticalAlignment="Center" Margin="400,15,0,0" />
                 </StackPanel>
-                <Slider Name="Barrarepro" Value="{Binding DuracionSeleccionada}" Maximum="10" Background="#535353" Height="7" Margin="150,5"/>
+                <ProgressBar Value="{Binding CurrentTime.TotalSeconds, Mode=OneTime}" Maximum="{Binding TotalDurationSeconds}" Height="5" Margin="35,10"
+ VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+ Style="{StaticResource SpotifyProgressBarStyle}"/>
+
+
             </StackPanel>
+
         </StackPanel>
     </DockPanel>
 </UserControl>

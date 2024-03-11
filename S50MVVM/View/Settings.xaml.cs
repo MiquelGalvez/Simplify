@@ -1,4 +1,5 @@
-﻿using S50MVVM.ViewModel;
+﻿using S50MVVM.Model;
+using S50MVVM.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,6 +25,19 @@ namespace S50MVVM.View
         public Settings()
         {
             InitializeComponent();
+            DataContext = new SettingVM();
+        }
+
+        private void ListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Obtener el DataContext del ListBox (que debería ser tu ViewModel)
+            var viewModel = DataContext as SettingVM;
+
+            // Obtener el elemento seleccionado del ListBox
+            var selectedSong = ((ListBox)sender).SelectedItem as Cancions;
+
+            // Llamar al comando en el ViewModel pasando la canción seleccionada como parámetro
+            viewModel?.ListBoxDoubleClickCommand.Execute(selectedSong);
         }
     }
 }

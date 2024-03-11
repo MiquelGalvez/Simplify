@@ -20,7 +20,21 @@ namespace S50MVVM
         public Login()
         {
             InitializeComponent();
-            DataContext = new LoginVM(); // Establece el ViewModel como el contexto de datos de la ventana}
+        }
+        private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext != null)
+            {
+                ((LoginVM)this.DataContext).Password = ((PasswordBox)sender).Password;
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext != null)
+            {
+                ((LoginVM)this.DataContext).Username = ((TextBox)sender).Text;
+            }
         }
     }
 }

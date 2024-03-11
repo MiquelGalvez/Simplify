@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace S50MVVM.Model
 {
-    internal class Cancions
+    public class Cancions
     {
             public int Id { get; set; }
             public string Titulo { get; set; }
@@ -16,5 +16,6 @@ namespace S50MVVM.Model
             public string Genere { get; set; }
             public string AnyLlancement { get; set; }
             public string URLImagenAlbum { get; set; }
+            public string URLCanco { get; set; }
     }
 }

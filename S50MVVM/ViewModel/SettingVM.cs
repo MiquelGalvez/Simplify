@@ -1,24 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using S50MVVM.Utilities;
+using System.Threading;
+using System.Windows.Input;
+using S50MVVM.Model;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
+using System.Threading.Tasks;
+using NAudio.Wave;
+using System.IO;
+using System.Net.Http;
+using System.Windows;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Threading;
-using S50MVVM.Model;
+using Newtonsoft.Json;
 
 namespace S50MVVM.ViewModel
 {
-    class SettingVM: Utilities.ViewModelBase
+    class SettingVM : ViewModelBase
     {
-        
+        private const string ClientId = "24e67cd5a9504357807fdfb8a3afeebd";
+        private const string ClientSecret = "493cc283c15346cebc84de681deec5f7";
+        private const string RedirectUri = "https://example.com/callback";
+
+        private string _accessToken;
+        private List<WaveOutEvent> _waveOutEvents; // Lista para almacenar las instancias de WaveOutEvent
+        private bool _isPlaying;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         private ObservableCollection<Cancions> _canciones;
@@ -28,226 +36,169 @@ namespace S50MVVM.ViewModel
             set
             {
                 _canciones = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Canciones)));
+                OnPropertyChanged(nameof(Canciones));
             }
         }
 
         public string NombrePlaylist { get; set; }
 
-
-        private TimeSpan _duracionSeleccionada;
-        public TimeSpan DuracionSeleccionada
+        private Cancions _selectedSong;
+        public Cancions SelectedSong
         {
-            get { return _duracionSeleccionada; }
+            get { return _selectedSong; }
             set
             {
-                _duracionSeleccionada = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DuracionSeleccionada)));
+                _selectedSong = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SelectedSong)));
             }
         }
 
-        private TimeSpan _tiempoTranscurrido;
-        public TimeSpan TiempoTranscurrido
+        private float _volume = 0.5f; // Valor de volumen inicial
+        public float Volume
         {
-            get { return _tiempoTranscurrido; }
+            get { return _volume; }
             set
             {
-                _tiempoTranscurrido = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TiempoTranscurrido)));
+                if (_volume != value)
+                {
+                    _volume = value;
+                    OnPropertyChanged(nameof(Volume));
+                    UpdateVolume(); // Método para actualizar el volumen de la reproducción de audio
+                }
             }
         }
 
-        private double _progresoReproduccion;
-        public double ProgresoReproduccion
-        {
-            get { return _progresoReproduccion; }
-            set
-            {
-                _progresoReproduccion = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ProgresoReproduccion)));
-            }
-        }
-
-        private DispatcherTimer _timer;
-        private DateTime _inicioReproduccion;
+        public ICommand ListBoxDoubleClickCommand { get; private set; }
 
         public SettingVM()
         {
-            // Inicializar la colección de canciones
+            ListBoxDoubleClickCommand = new RelayCommand(ExecuteListBoxDoubleClickCommand);
             Canciones = new ObservableCollection<Cancions>();
-
-            // Establecer valores iniciales para TiempoTranscurrido y DuracionSeleccionada
-            TiempoTranscurrido = TimeSpan.Zero;
-            DuracionSeleccionada = TimeSpan.MaxValue; // O cualquier otro valor inicial razonable
-
-            // Llamar al método para cargar canciones desde la base de datos
             CargarCancionesDesdeBaseDeDatos();
-
-          
-
-            // Resto del código de inicialización del timer, etc.
+            _waveOutEvents = new List<WaveOutEvent>(); // Inicializa la lista de WaveOutEvent
         }
-        private int ObtenerIdPlaylistPorNombre(string nomplaylist)
+
+        // Función que se ejecuta cuando se hace doble clic en un elemento de la lista
+        private void ExecuteListBoxDoubleClickCommand(object parameter)
         {
-            int playlistId; // Inicializamos el ID como -1 para indicar que no se ha encontrado ninguna lista de reproducción con ese nombre
-
-            string consulta = "SELECT PlaylistID FROM ListasReproduccion WHERE NombreLista = @NombreLista";
-
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["S50MVVM.Properties.Settings.CampalansSpotiConnectionString"].ConnectionString))
+            var selectedSong = parameter as Cancions;
+            if (selectedSong != null)
             {
-                using (SqlCommand cmd = new SqlCommand(consulta, conn))
+                string songName = selectedSong.Titulo;
+                MessageBox.Show(songName);
+                string artistName = selectedSong.Artista;
+
+                IniciarReproduccion(songName, artistName);
+            }
+            else
+            {
+                MessageBox.Show("El parámetro 'parameter' es nulo.");
+            }
+        }
+
+
+        // Método para actualizar el volumen de la reproducción de audio
+        private void UpdateVolume()
+        {
+            foreach (var waveOut in _waveOutEvents)
+            {
+                if (waveOut != null)
                 {
-                    cmd.Parameters.AddWithValue("@NombreLista", nomplaylist);
-
-                    try
-                    {
-                        conn.Open();
-                        object result = cmd.ExecuteScalar();
-
-                        if (result != null && result != DBNull.Value && result is int)
-                        {
-                            return playlistId = (int)result;
-                        }
-                        else
-                        {
-                            // El resultado no es del tipo esperado o es nulo
-                            Console.WriteLine("El resultado de ExecuteScalar no es del tipo esperado o es nulo.");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Manejar la excepción adecuadamente (por ejemplo, registrándola o lanzándola nuevamente)
-                        Console.WriteLine("Error al obtener el ID de la lista de reproducción desde la base de datos: " + ex.Message);
-                    }
+                    waveOut.Volume = Volume; // Aplica el volumen al objeto WaveOutEvent
                 }
             }
-            return -1;
         }
 
-        private void CargarCancionesDesdeBaseDeDatos()
+        // Método para iniciar la reproducción de una canción
+        private async Task IniciarReproduccion(string songName, string artistName)
         {
-            // Obtener el ID de la lista de reproducción utilizando su nombre
-            int playlistId = ObtenerIdPlaylistPorNombre(((CustomerProjectIdentity)Thread.CurrentPrincipal.Identity).Llista);
-            
-            if (playlistId <= 0)
+            MessageBox.Show("Se ha entrado a la funcion de reproducir preview");
+
+            if (SelectedSong == null)
             {
-                // Si no se encuentra la lista de reproducción, puedes manejarlo aquí
-                // Por ejemplo, mostrar un mensaje de error
-                Console.WriteLine("La lista de reproducción no se encontró en la base de datos.");
+                MessageBox.Show("Selecciona una canción.");
                 return;
             }
 
-            string connectionString = ConfigurationManager.ConnectionStrings["S50MVVM.Properties.Settings.CampalansSpotiConnectionString"].ConnectionString;
+            string accessToken = _accessToken;
 
-            // Consulta para seleccionar las canciones de la lista de reproducción actual
-            string query = @"SELECT C.*
-                FROM CancionesEnListaReproduccion CLR
-                INNER JOIN Canciones C ON CLR.SongID = C.SongID
-                WHERE CLR.PlaylistID = @PlaylistId";
+            string query = $"{songName} artist:{artistName}";
+            string encodedQuery = Uri.EscapeDataString(query);
+            string searchUrl = $"https://api.spotify.com/v1/search?q={encodedQuery}&type=track";
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            using (var httpClient = new HttpClient())
             {
-                SqlCommand command = new SqlCommand(query, connection);
-                command.Parameters.AddWithValue("@PlaylistId", playlistId);
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
 
                 try
                 {
-                    connection.Open();
-                    SqlDataReader reader = command.ExecuteReader();
-
-                    while (reader.Read())
+                    HttpResponseMessage response = await httpClient.GetAsync(searchUrl);
+                    if (response.IsSuccessStatusCode)
                     {
-                        Canciones.Add(new Cancions
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        var tracks = Newtonsoft.Json.Linq.JObject.Parse(responseContent)["tracks"]["items"];
+
+                        var firstTrack = tracks.FirstOrDefault();
+                        if (firstTrack != null)
                         {
-                            Titulo = reader["Titulo"].ToString(),
-                            Artista = reader["Artista"].ToString(),
-                            Album = reader["Album"].ToString(),
-                            Duracio = TimeSpan.Parse(reader["Duracion"].ToString()),
-                            Genere = reader["Genero"].ToString(),
-                            AnyLlancement = reader["AnioLanzamiento"].ToString(),
-                            URLImagenAlbum = reader["URLImagenAlbum"].ToString()
-                        });
+                            var trackUri = firstTrack["preview_url"].ToString();
+
+                            if (!string.IsNullOrEmpty(trackUri))
+                            {
+                                using (var waveOut = new WaveOutEvent())
+                                {
+                                    _waveOutEvents.Add(waveOut); // Agrega la instancia de WaveOutEvent a la lista
+                                    using (var webClient = new HttpClient())
+                                    {
+                                        var audioBytes = await webClient.GetByteArrayAsync(trackUri);
+                                        using (var memoryStream = new MemoryStream(audioBytes))
+                                        {
+                                            using (var mp3Reader = new Mp3FileReader(memoryStream))
+                                            {
+                                                waveOut.Init(mp3Reader);
+                                                waveOut.Volume = Volume; // Aplica el volumen al objeto WaveOutEvent
+                                                waveOut.Play();
+
+                                                // Actualiza la barra de progreso mientras se reproduce el audio
+                                                while (waveOut.PlaybackState == PlaybackState.Playing)
+                                                {
+                                                    await Task.Delay(500);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                MessageBox.Show("La canción no tiene una URL de vista previa disponible.", "Advertencia", MessageBoxButton.OK, MessageBoxImage.Warning);
+                            }
+                        }
+                        else
+                        {
+                            MessageBox.Show("No se encontraron canciones.");
+                        }
                     }
-                    reader.Close();
+                    else
+                    {
+                        MessageBox.Show($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // Manejar la excepción adecuadamente (por ejemplo, registrándola o lanzándola nuevamente)
-                    Console.WriteLine("Error al cargar canciones desde la base de datos: " + ex.Message);
+                    MessageBox.Show($"Error: {ex.Message}");
                 }
             }
         }
 
-        private void IniciarReproduccion(TimeSpan duracion)
+        // Método para cargar las canciones desde la base de datos
+        private void CargarCancionesDesdeBaseDeDatos()
         {
-            DuracionSeleccionada = duracion;
-        }
+            // Obtiene el nombre de la lista de reproducción del hilo principal
+            string nombrePlaylist = ((CustomerProjectIdentity)Thread.CurrentPrincipal.Identity).Llista;
 
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            TiempoTranscurrido = DateTime.Now - _inicioReproduccion;
-            ProgresoReproduccion = TiempoTranscurrido.TotalSeconds / DuracionSeleccionada.TotalSeconds * 100; // Calcular el progreso en porcentaje
-
-            if (TiempoTranscurrido >= DuracionSeleccionada)
-            {
-                _timer.Stop();
-                TiempoTranscurrido = TimeSpan.Zero;
-                ProgresoReproduccion = 0; // Restablecer el progreso de reproducción
-            }
-        }
-
-        private RelayCommand _iniciarReproduccionCommand;
-        public ICommand IniciarReproduccionCommand
-        {
-            get
-            {
-                if (_iniciarReproduccionCommand == null)
-                {
-                    _iniciarReproduccionCommand = new RelayCommand(ExecuteIniciarReproduccionCommand);
-                }
-                return _iniciarReproduccionCommand;
-            }
-        }
-
-        private void ExecuteIniciarReproduccionCommand(object parameter)
-        {
-            if (parameter is Cancions cancion)
-            {
-                // Iniciar reproducción y establecer la duración de la canción seleccionada
-                IniciarReproduccion(cancion.Duracio);
-
-                // Reiniciar la barra de progreso
-                TiempoTranscurrido = TimeSpan.Zero;
-                ProgresoReproduccion = 0;
-            }
-        }
-    }
-
-    public class RelayCommand : ICommand
-    {
-        private readonly Action<object> _execute;
-        private readonly Predicate<object> _canExecute;
-
-        public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public event EventHandler CanExecuteChanged
-        {
-            add { CommandManager.RequerySuggested += value; }
-            remove { CommandManager.RequerySuggested -= value; }
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return _canExecute == null || _canExecute(parameter);
-        }
-
-        public void Execute(object parameter)
-        {
-            _execute(parameter);
+            // Llama al método correspondiente a la base de datos para cargar las canciones
+            Canciones = BBDD.CargarCancionesDesdeBaseDeDatos(nombrePlaylist);
         }
     }
 }

@@ -1,19 +1,15 @@
 ﻿using S50MVVM.Utilities;
-using S50MVVM;
-using System.Configuration;
-using System.Data.SqlClient;
 using System.Windows.Input;
 using System.Windows;
 using System;
-using System.Windows.Controls;
-using System.Security.Cryptography.X509Certificates;
 using S50MVVM.Model;
-using System.Security.Principal;
 using System.Threading;
+using System.Security.Principal;
+using System.Security;
 
 namespace S50MVVM.ViewModel
 {
-    class LoginVM : Utilities.ViewModelBase
+    class LoginVM : ViewModelBase
     {
         private string _username;
         public string Username
@@ -37,59 +33,50 @@ namespace S50MVVM.ViewModel
             }
         }
 
-        private void Login(object parameter)
-        {
-            string username = Username.Trim();
-            string password = Password.Trim();
-            // Resto del código...
-        }
-
-        string connectionString = ConfigurationManager.ConnectionStrings["S50MVVM.Properties.Settings.CampalansSpotiConnectionString"].ConnectionString;
-
         public ICommand LoginCommand { get; }
 
         public LoginVM()
         {
-            LoginCommand = new RelayCommand(CanLogin);
+            // Comanda per a l'inici de sessió
+            LoginCommand = new RelayCommand(Login);
         }
 
-        private void CanLogin(object parameter)
+
+        // Funció que comprova els valors de password i user i ens permet fer login
+        private void Login(object parameter)
         {
-            var login = new Login();
-            // Obtener los valores del TextBox y PasswordBox
+            // Obté els valors del TextBox i PasswordBox
             string username = Username.Trim();
             string password = Password.Trim();
-            // Consulta SQL para verificar la existencia del usuario
-            string query = "SELECT COUNT(*) FROM Usuarios WHERE NombreUsuario = @Username AND Contraseña = @Password";
 
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                // Truca al mètode d'autenticació en la classe BBDD
+                bool isAuthenticated = BBDD.AuthenticateUser(username, password);
+
+                if (isAuthenticated)
                 {
-                    SqlCommand command = new SqlCommand(query, connection);
-                    command.Parameters.AddWithValue("@Username", username);
-                    command.Parameters.AddWithValue("@Password", password);
-                    connection.Open();
+                    // Estableix el contexte de seguretat de l'usuari
+                    Thread.CurrentPrincipal = new GenericPrincipal(new CustomerProjectIdentity(username.ToLower(), ""), null);
 
-                    int count = (int)command.ExecuteScalar(); // Obtener el recuento de filas que coinciden con las credenciales
+                    // Obre la finestra principal
+                    var mainWin = new MainWindow();
+                    mainWin.Show();
 
-                    if (count > 0)
+                    // Tanca la finestra d'inici de sessió
+                    if (parameter is Window loginWindow)
                     {
-                        Thread.CurrentPrincipal = new GenericPrincipal(new CustomerProjectIdentity(username.ToLower(), ""), null);
-                        var mainwin = new MainWindow();
-                        mainwin.Show();
-                        login.Close();
+                        loginWindow.Close();
                     }
-                    else
-                    {
-                        // El usuario no existe o las credenciales son incorrectas
-                        MessageBox.Show("Nombre de usuario o contraseña incorrectos");
-                    }
+                }
+                else
+                {
+                    MessageBox.Show("Nom d'usuari o contrasenya incorrectes");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error al intentar iniciar sesión: " + ex.Message);
+                MessageBox.Show("Error en intentar iniciar sessió: " + ex.Message);
             }
         }
     }
