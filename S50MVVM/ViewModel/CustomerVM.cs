@@ -17,8 +17,8 @@ namespace S50MVVM.ViewModel
 {
     class CustomerVM : Utilities.ViewModelBase
     {
-        private const string ClientId = "24e67cd5a9504357807fdfb8a3afeebd";
-        private const string ClientSecret = "493cc283c15346cebc84de681deec5f7";
+        private const string ClientId = "xxxx";
+        private const string ClientSecret = "xxxx";
         private const string RedirectUri = "https://example.com/callback";
 
         private string _accessToken;

@@ -146,7 +146,7 @@ namespace S50MVVM.Model
             }
 
             return canciones;
-        }
+        } 
 
         // Funcio que comprova a la base de dades si els valors introduits perteneixen a un usuari ja registrat
         public static bool AuthenticateUser(string username, string password)

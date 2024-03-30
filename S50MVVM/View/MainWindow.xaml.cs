@@ -30,10 +30,5 @@ namespace S50MVVM
         {
             Close();
         }
-
-        private void MouseBinding_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
     }
 }

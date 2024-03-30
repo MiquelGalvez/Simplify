@@ -19,8 +19,8 @@ namespace S50MVVM.ViewModel
 {
     class SettingVM : ViewModelBase
     {
-        private const string ClientId = "24e67cd5a9504357807fdfb8a3afeebd";
-        private const string ClientSecret = "493cc283c15346cebc84de681deec5f7";
+        private const string ClientId = "xxxxxx";
+        private const string ClientSecret = "xxxxxx";
         private const string RedirectUri = "https://example.com/callback";
 
         private string _accessToken;
@@ -92,7 +92,8 @@ namespace S50MVVM.ViewModel
             }
             else
             {
-                MessageBox.Show("El parámetro 'parameter' es nulo.");
+                MessageBox.Show("Si us plau, escull una cançó.", "Advertència", MessageBoxButton.OK, MessageBoxImage.Warning);
+
             }
         }
 

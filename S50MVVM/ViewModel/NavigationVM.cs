@@ -74,7 +74,7 @@ namespace S50MVVM.ViewModel
             ListasReproduccion = BBDD.CargarListasReproduccionDesdeBaseDeDatos(nombreUsuario);
         }
 
-        // Mètode per a gestionar el doble clic en el ListBox
+        // Mètode per a gestionar el doble clic en el ListBox, que finalment es cuan es presiona la tecla espai
         private void ListBoxDoubleClick(object selectedItem)
         {
             if (selectedItem is ListaReproduccion playlist)
